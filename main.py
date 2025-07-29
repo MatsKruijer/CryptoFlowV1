@@ -1,8 +1,10 @@
 from flask import Flask, request, jsonify
-from transformers import pipeline
+from sumy.parsers.plaintext import PlaintextParser
+from sumy.nlp.tokenizers import Tokenizer
+from sumy.summarizers.lsa import LsaSummarizer
 
 app = Flask(__name__)
-summarizer = pipeline("summarization", model="t5-small")
+summarizer = LsaSummarizer()
 
 @app.route("/summarize", methods=["POST"])
 def summarize():
@@ -12,8 +14,11 @@ def summarize():
     if not text:
         return jsonify({"error": "No text provided"}), 400
 
-    summary = summarizer(text, max_length=130, min_length=30, do_sample=False)
-    return jsonify({"summary": summary[0]["summary_text"]})
+    parser = PlaintextParser.from_string(text, Tokenizer("dutch"))
+    summary_sentences = summarizer(parser.document, 3)  # 3 zinnen samenvatting
+
+    summary = " ".join(str(sentence) for sentence in summary_sentences)
+    return jsonify({"summary": summary})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=3000)
