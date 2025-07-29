@@ -1,28 +1,15 @@
-from flask import Flask, request, jsonify
 from transformers import pipeline
+from flask import Flask, request, jsonify
 
 app = Flask(__name__)
-summarizer = pipeline("summarization", model="philschmid/bart-mini-xsum-samsum")
+summarizer = pipeline("summarization", model="sshleifer/distilbart-cnn-12-6")
 
-@app.route("/", methods=["POST"])
-def summarize():
+@app.route("/samenvatten", methods=["POST"])
+def samenvatten():
     data = request.get_json()
-    if "text" not in data:
-        return jsonify({"error": "No 'text' provided"}), 400
-
-    text = data["text"]
-    if not text.strip():
-        return jsonify({"summary": ""})
-
-    try:
-        summary = summarizer(text, max_length=130, min_length=30, do_sample=False)
-        return jsonify({"summary": summary[0]["summary_text"]})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-import os
+    tekst = data.get("text", "")
+    summary = summarizer(tekst, max_length=60, min_length=20, do_sample=False)
+    return jsonify(summary)
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 3000))
-    app.run(host="0.0.0.0", port=port)
-
+    app.run(host="0.0.0.0", port=3000)
